@@ -1,13 +1,16 @@
-const express = require('express');
-const { google } = require('googleapis');
-const User = require('../models/User');
+import express, { Request, Response, NextFunction } from 'express';
+import { google } from 'googleapis';
+import { UserModel } from '../models/User';
+import { CreateUserData } from '../types/interfaces';
+import { Environment } from '../types/enums';
+
 const router = express.Router();
 
 // Google OAuth configuration
 const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
+  process.env['GOOGLE_CLIENT_ID'],
+  process.env['GOOGLE_CLIENT_SECRET'],
+  process.env['GOOGLE_REDIRECT_URI']
 );
 
 // Scopes for Google Calendar access
@@ -18,8 +21,13 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.profile'
 ];
 
+// Extend Express Request interface
+interface AuthenticatedRequest extends Request {
+  session: any; // Using any for session to avoid complex typing
+}
+
 // Generate OAuth URL
-router.get('/google', (req, res) => {
+router.get('/google', (_req: Request, res: Response) => {
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
@@ -29,12 +37,13 @@ router.get('/google', (req, res) => {
 });
 
 // OAuth callback
-router.get('/google/callback', async (req, res) => {
+router.get('/google/callback', async (req: Request, res: Response) => {
   try {
     const { code } = req.query;
     
-    if (!code) {
-      return res.status(400).json({ error: 'Authorization code not provided' });
+    if (!code || typeof code !== 'string') {
+      res.status(400).json({ error: 'Authorization code not provided' });
+      return;
     }
 
     // Exchange code for tokens
@@ -46,41 +55,56 @@ router.get('/google/callback', async (req, res) => {
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const { data: userInfo } = await oauth2.userinfo.get();
 
+    // Validate required user info
+    if (!userInfo.id || !userInfo.email || !userInfo.name) {
+      res.status(500).json({ error: 'Incomplete user information received from Google' });
+      return;
+    }
+
     // Find or create user
-    let user = await User.findByGoogleId(userInfo.id);
+    let user = await UserModel.findByGoogleId(userInfo.id);
     
     if (!user) {
-      user = await User.create({
+      if (!tokens.access_token) {
+        res.status(500).json({ error: 'No access token received from Google' });
+        return;
+      }
+      
+      const userData: CreateUserData = {
         googleId: userInfo.id,
         email: userInfo.email,
         name: userInfo.name,
-        picture: userInfo.picture,
+        picture: userInfo.picture || null,
         accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token, // will be set below
-        tokenExpiry: new Date(tokens.expiry_date)
-      });
+        refreshToken: tokens.refresh_token || '',
+        tokenExpiry: new Date(tokens.expiry_date || Date.now())
+      };
+      
+      user = await UserModel.create(userData);
+      
       // Patch: update refreshToken if missing
       if (!tokens.refresh_token && tokens.access_token) {
-        await User.updateTokens(
+        await UserModel.updateTokens(
           user.id,
           tokens.access_token,
-          user.refreshToken,
-          new Date(tokens.expiry_date)
+          user.refresh_token,
+          new Date(tokens.expiry_date!)
         );
       }
     } else {
       // Update existing user's tokens
-      user = await User.updateTokens(
+      user = await UserModel.updateTokens(
         user.id,
-        tokens.access_token,
+        tokens.access_token!,
         tokens.refresh_token || user.refresh_token,
-        new Date(tokens.expiry_date)
+        new Date(tokens.expiry_date!)
       );
     }
 
     // Store user in session
-    req.session.userId = user.id;
-    req.session.user = {
+    const authReq = req as AuthenticatedRequest;
+    authReq.session.userId = user.id;
+    authReq.session.user = {
       id: user.id,
       name: user.name,
       email: user.email,
@@ -88,36 +112,42 @@ router.get('/google/callback', async (req, res) => {
     };
 
     // Sync today's events after login
-    const calendarService = require('../services/calendarService');
+    const calendarServiceModule = await import('../services/calendarService');
+    const calendarService = calendarServiceModule.default;
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
     try {
       const events = await calendarService.fetchEvents(user.id, startOfDay, endOfDay);
-      await calendarService.syncEvents(user.id, events);
-      console.log(`[Auth] Synced today's events for user ${user.id}`);
+      if (events) {
+        await calendarService.syncEvents(user.id, events);
+        console.log(`[Auth] Synced today's events for user ${user.id}`);
+      }
     } catch (err) {
       console.error('[Auth] Failed to sync events after login:', err);
     }
 
     // Redirect to frontend
-    res.redirect(process.env.NODE_ENV === 'production' 
-      ? `${process.env.FRONTEND_URL || 'https://your-app.vercel.app'}/dashboard` 
+    res.redirect(process.env['NODE_ENV'] === Environment.PRODUCTION
+      ? `${process.env['FRONTEND_URL'] || 'https://your-app.vercel.app'}/dashboard` 
       : 'http://localhost:3000/dashboard'
     );
+    return;
 
   } catch (error) {
     console.error('OAuth callback error:', error);
     res.status(500).json({ error: 'Authentication failed' });
+    return;
   }
 });
 
 // Check authentication status
-router.get('/status', (req, res) => {
-  if (req.session.user) {
+router.get('/status', (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  if (authReq.session.user) {
     res.json({ 
       authenticated: true, 
-      user: req.session.user 
+      user: authReq.session.user 
     });
   } else {
     res.json({ authenticated: false });
@@ -125,29 +155,33 @@ router.get('/status', (req, res) => {
 });
 
 // Logout
-router.post('/logout', (req, res) => {
+router.post('/logout', (req: Request, res: Response) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ error: 'Logout failed' });
     }
-    res.json({ message: 'Logged out successfully' });
+    return res.json({ message: 'Logged out successfully' });
   });
 });
 
 // Middleware to check if user is authenticated
-const requireAuth = (req, res, next) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: 'Authentication required' });
+const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
+  const authReq = req as AuthenticatedRequest;
+  if (!authReq.session.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
   }
   next();
 };
 
 // Get current user
-router.get('/me', requireAuth, async (req, res) => {
+router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
-    const user = await User.findById(req.session.user.id);
+    const authReq = req as AuthenticatedRequest;
+    const user = await UserModel.findById(authReq.session.user!.id);
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
     
     res.json({
@@ -167,11 +201,12 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 // Update user settings
-router.put('/settings', requireAuth, async (req, res) => {
+router.put('/settings', requireAuth, async (req: Request, res: Response): Promise<void> => {
   try {
+    const authReq = req as AuthenticatedRequest;
     const { whatsappRecipient, automationEnabled, dailySummaryTime, timezone } = req.body;
     
-    const user = await User.updateSettings(req.session.user.id, {
+    const user = await UserModel.updateSettings(authReq.session.user!.id, {
       whatsappRecipient,
       automationEnabled,
       dailySummaryTime,
@@ -179,7 +214,8 @@ router.put('/settings', requireAuth, async (req, res) => {
     });
     
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'User not found' });
+      return;
     }
     res.json({ message: 'Settings updated successfully' });
   } catch (error) {
@@ -188,4 +224,4 @@ router.put('/settings', requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router; 
+export default router; 

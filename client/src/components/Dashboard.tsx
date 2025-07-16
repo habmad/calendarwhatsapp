@@ -12,23 +12,44 @@ import {
   Send
 } from 'lucide-react';
 
-const Dashboard = () => {
-  const [summary, setSummary] = useState(null);
-  const [automationStatus, setAutomationStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [testing, setTesting] = useState(false);
-  const [error, setError] = useState(null);
+interface CalendarEvent {
+  id: number;
+  summary: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+  eventType: string;
+  location?: string;
+}
+
+interface SummaryData {
+  summary: string;
+  events: CalendarEvent[];
+}
+
+interface AutomationStatus {
+  automationEnabled: boolean;
+  dailySummaryTime: string;
+  timezone: string;
+}
+
+const Dashboard: React.FC = () => {
+  const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [automationStatus, setAutomationStatus] = useState<AutomationStatus | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [testing, setTesting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDashboard();
   }, []);
 
-  const loadDashboard = async () => {
+  const loadDashboard = async (): Promise<void> => {
     try {
       setLoading(true);
       const [summaryRes, statusRes] = await Promise.all([
-        axios.get('/calendar/today'),
-        axios.get('/automation/status')
+        axios.get<SummaryData>('/calendar/today'),
+        axios.get<AutomationStatus>('/automation/status')
       ]);
       
       setSummary(summaryRes.data);
@@ -41,7 +62,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleStartAutomation = async () => {
+  const handleStartAutomation = async (): Promise<void> => {
     try {
       await axios.post('/automation/start');
       await loadDashboard();
@@ -50,7 +71,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleStopAutomation = async () => {
+  const handleStopAutomation = async (): Promise<void> => {
     try {
       await axios.post('/automation/stop');
       await loadDashboard();
@@ -59,7 +80,7 @@ const Dashboard = () => {
     }
   };
 
-  const handleTestAutomation = async () => {
+  const handleTestAutomation = async (): Promise<void> => {
     try {
       setTesting(true);
       const response = await axios.post('/automation/test');
@@ -71,9 +92,9 @@ const Dashboard = () => {
     }
   };
 
-  const handleTriggerSummary = async () => {
+  const handleTriggerSummary = async (): Promise<void> => {
     try {
-      const response = await axios.post('/automation/trigger-summary');
+      const response = await axios.post<{ success: boolean; error?: string }>('/automation/trigger-summary');
       if (response.data.success) {
         alert('Daily summary sent successfully!');
       } else {
@@ -85,13 +106,13 @@ const Dashboard = () => {
     }
   };
 
-  const handlePreviewSummary = async () => {
+  const handlePreviewSummary = async (): Promise<void> => {
     try {
-      const response = await axios.post('/whatsapp/preview-summary');
-      if (response.data.success) {
+      const response = await axios.post<{ success: boolean; summary?: string; error?: string }>('/whatsapp/preview-summary');
+      if (response.data.success && response.data.summary) {
         alert('WhatsApp Message Preview:\n\n' + response.data.summary);
       } else {
-        alert('Failed to preview summary: ' + response.data.error);
+        alert('Failed to preview summary: ' + (response.data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Failed to preview summary:', error);
@@ -99,9 +120,9 @@ const Dashboard = () => {
     }
   };
 
-  const handleEnableAutomation = async () => {
+  const handleEnableAutomation = async (): Promise<void> => {
     try {
-      const response = await axios.post('/automation/debug/enable');
+      const response = await axios.post<{ success: boolean; error?: string }>('/automation/debug/enable');
       if (response.data.success) {
         alert('Automation enabled! Try "Send Summary Now" again.');
         await loadDashboard(); // Refresh the dashboard

@@ -1,18 +1,22 @@
-const cron = require('node-cron');
-const User = require('../models/User');
-const calendarService = require('./calendarService');
-const whatsappService = require('./whatsappService');
+import cron from 'node-cron';
+import { UserModel } from '../models/User';
+import calendarService from './calendarService';
+import whatsappService from './whatsappService';
+import { CalendarEventModel } from '../models/CalendarEvent';
 
 class AutomationService {
+  private jobs: Map<string, cron.ScheduledTask>;
+  private changeCheckInterval: NodeJS.Timeout | null;
+
   constructor() {
     this.jobs = new Map();
     this.changeCheckInterval = null;
   }
 
   // Start automation for a user
-  async startUserAutomation(userId) {
+  async startUserAutomation(userId: number): Promise<void> {
     try {
-      const user = await User.findById(userId);
+      const user = await UserModel.findById(userId);
       if (!user || !user.automation_enabled) {
         return;
       }
@@ -38,7 +42,7 @@ class AutomationService {
   }
 
   // Stop automation for a user
-  stopUserAutomation(userId) {
+  stopUserAutomation(userId: number): void {
     const job = this.jobs.get(userId.toString());
     if (job) {
       job.stop();
@@ -48,13 +52,13 @@ class AutomationService {
   }
 
   // Send daily summary for a user
-  async sendDailySummary(userId) {
+  async sendDailySummary(userId: number): Promise<void> {
     try {
-      const user = await User.findById(userId);
+      const user = await UserModel.findById(userId);
       console.log(`[AutomationService] User lookup result for ${userId}:`, user ? { 
         id: user.id, 
         automation_enabled: user.automation_enabled,
-        whatsapp_recipient: user.whatsapp_recipient,
+        whatsapp_recipients: user.whatsapp_recipients,
         name: user.name
       } : 'null');
       if (!user || !user.automation_enabled) {
@@ -62,14 +66,15 @@ class AutomationService {
         return;
       }
 
-      console.log(`[AutomationService] Sending daily summary for user ${userId} to ${user.whatsapp_recipient}`);
+      console.log(`[AutomationService] Sending daily summary for user ${userId} to ${user.whatsapp_recipients?.length || 0} recipients`);
       
       // Get today's summary
       const summary = await calendarService.getTodaySummary(userId);
       console.log(`[AutomationService] WhatsApp summary content:`, summary.summary);
       
-      // Send via WhatsApp
-      const result = await whatsappService.sendDailySummary(user.whatsapp_recipient, summary.summary);
+      // Send via WhatsApp to multiple recipients
+      const recipients = user.whatsapp_recipients || [process.env['DEFAULT_WHATSAPP_RECIPIENT'] || ''];
+      const result = await whatsappService.sendDailySummary(recipients, summary.summary);
       console.log(`[AutomationService] WhatsApp send result:`, result);
       
       console.log(`Daily summary sent successfully for user ${userId}`);
@@ -77,9 +82,13 @@ class AutomationService {
       console.error(`[AutomationService] Failed to send daily summary for user ${userId}:`, error);
       // Send error notification
       try {
-        const user = await User.findById(userId);
+        const user = await UserModel.findById(userId);
         if (user) {
-          await whatsappService.sendErrorNotification(user.whatsapp_recipient, error.message);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+          const recipients = user.whatsapp_recipients || [process.env['DEFAULT_WHATSAPP_RECIPIENT'] || ''];
+          if (recipients[0]) {
+            await whatsappService.sendErrorNotification(recipients[0], errorMessage);
+          }
         }
       } catch (notifyError) {
         console.error('[AutomationService] Failed to send error notification:', notifyError);
@@ -88,7 +97,7 @@ class AutomationService {
   }
 
   // Start change detection for all users
-  startChangeDetection() {
+  startChangeDetection(): void {
     // Check for changes every 5 minutes
     this.changeCheckInterval = setInterval(async () => {
       await this.checkAllUsersForChanges();
@@ -98,7 +107,7 @@ class AutomationService {
   }
 
   // Stop change detection
-  stopChangeDetection() {
+  stopChangeDetection(): void {
     if (this.changeCheckInterval) {
       clearInterval(this.changeCheckInterval);
       this.changeCheckInterval = null;
@@ -107,9 +116,9 @@ class AutomationService {
   }
 
   // Check all users for calendar changes
-  async checkAllUsersForChanges() {
+  async checkAllUsersForChanges(): Promise<void> {
     try {
-      const users = await User.findAutomationEnabled();
+      const users = await UserModel.findAutomationEnabled();
       
       for (const user of users) {
         try {
@@ -124,15 +133,16 @@ class AutomationService {
   }
 
   // Check a specific user for changes
-  async checkUserForChanges(user) {
+  async checkUserForChanges(user: any): Promise<void> {
     try {
       const changes = await calendarService.checkForChanges(user.id);
       
       if (changes.length > 0) {
         console.log(`Found ${changes.length} changes for user ${user.id}`);
         
-        // Send change notification
-        await whatsappService.sendChangeNotification(user.whatsapp_recipient, changes);
+        // Send change notification to multiple recipients
+        const recipients = user.whatsapp_recipients || [process.env['DEFAULT_WHATSAPP_RECIPIENT'] || ''];
+        await whatsappService.sendChangeNotification(recipients, changes);
         
         // Update local database with changes
         await this.processChanges(user.id, changes);
@@ -143,20 +153,24 @@ class AutomationService {
   }
 
   // Process changes and update local database
-  async processChanges(userId, changes) {
+  async processChanges(userId: number, changes: any[]): Promise<void> {
     try {
+      console.log(`[AutomationService] Processing ${changes.length} changes for user ${userId}`);
       for (const change of changes) {
+        console.log(`[AutomationService] Processing change: ${change.type} - ${change.event.summary}`);
         switch (change.type) {
           case 'added':
             await calendarService.syncEvents(userId, [change.event]);
+            console.log(`[AutomationService] Synced added event: ${change.event.summary}`);
             break;
           case 'modified':
             await calendarService.syncEvents(userId, [change.event]);
+            console.log(`[AutomationService] Synced modified event: ${change.event.summary}`);
             break;
           case 'deleted':
             // Mark event as cancelled in database
-            const CalendarEvent = require('../models/CalendarEvent');
-            await CalendarEvent.markAsCancelled(userId, change.event.event_id);
+            await CalendarEventModel.markAsCancelled(userId, change.event.event_id);
+            console.log(`[AutomationService] Marked deleted event: ${change.event.summary}`);
             break;
         }
       }
@@ -166,9 +180,9 @@ class AutomationService {
   }
 
   // Start automation for all users
-  async startAllAutomations() {
+  async startAllAutomations(): Promise<void> {
     try {
-      const users = await User.findAutomationEnabled();
+      const users = await UserModel.findAutomationEnabled();
       
       for (const user of users) {
         await this.startUserAutomation(user.id);
@@ -184,7 +198,7 @@ class AutomationService {
   }
 
   // Stop all automations
-  stopAllAutomations() {
+  stopAllAutomations(): void {
     // Stop all user jobs
     for (const [userId, job] of this.jobs) {
       job.stop();
@@ -198,21 +212,22 @@ class AutomationService {
   }
 
   // Manual trigger for daily summary
-  async triggerDailySummary(userId) {
+  async triggerDailySummary(userId: number): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
       console.log(`[AutomationService] triggerDailySummary called for userId: ${userId}`);
       await this.sendDailySummary(userId);
       return { success: true, message: 'Daily summary sent successfully' };
     } catch (error) {
       console.error('[AutomationService] Failed to trigger daily summary:', error);
-      return { success: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return { success: false, error: errorMessage };
     }
   }
 
   // Manual trigger for change check
-  async triggerChangeCheck(userId) {
+  async triggerChangeCheck(userId: number): Promise<{ success: boolean; message?: string; error?: string }> {
     try {
-      const user = await User.findById(userId);
+      const user = await UserModel.findById(userId);
       if (!user) {
         throw new Error('User not found');
       }
@@ -221,13 +236,14 @@ class AutomationService {
       return { success: true, message: 'Change check completed' };
     } catch (error) {
       console.error('Failed to trigger change check:', error);
-      return { success: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      return { success: false, error: errorMessage };
     }
   }
 
   // Get automation status for a user
-  async getAutomationStatus(userId) {
-    const user = await User.findById(userId);
+  async getAutomationStatus(userId: number): Promise<any> {
+    const user = await UserModel.findById(userId);
     if (!user) {
       return { error: 'User not found' };
     }
@@ -244,4 +260,4 @@ class AutomationService {
   }
 }
 
-module.exports = new AutomationService(); 
+export default new AutomationService(); 

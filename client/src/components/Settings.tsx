@@ -10,14 +10,32 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-const Settings = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState(null);
+interface User {
+  id: number;
+  email: string;
+  name: string;
+  picture?: string;
+  whatsappRecipient?: string;
+  automationEnabled?: boolean;
+  dailySummaryTime?: string;
+  timezone?: string;
+}
 
-  const [formData, setFormData] = useState({
+interface FormData {
+  whatsappRecipient: string;
+  automationEnabled: boolean;
+  dailySummaryTime: string;
+  timezone: string;
+}
+
+const Settings: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saved, setSaved] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState<FormData>({
     whatsappRecipient: '',
     automationEnabled: true,
     dailySummaryTime: '08:00',
@@ -28,10 +46,10 @@ const Settings = () => {
     loadUserSettings();
   }, []);
 
-  const loadUserSettings = async () => {
+  const loadUserSettings = async (): Promise<void> => {
     try {
       setLoading(true);
-      const response = await axios.get('/auth/me');
+      const response = await axios.get<User>('/auth/me');
       setUser(response.data);
       setFormData({
         whatsappRecipient: response.data.whatsappRecipient || '',
@@ -47,15 +65,16 @@ const Settings = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     try {
       setSaving(true);
       setError(null);
@@ -76,7 +95,7 @@ const Settings = () => {
     }
   };
 
-  const handleTestWhatsApp = async () => {
+  const handleTestWhatsApp = async (): Promise<void> => {
     try {
       const message = `🧪 Test message from GCal WhatsApp\n\nThis is a test message to verify your WhatsApp integration is working correctly.`;
       
@@ -220,33 +239,11 @@ const Settings = () => {
               <option value="Europe/Paris">Paris (CET)</option>
               <option value="Asia/Tokyo">Tokyo (JST)</option>
               <option value="Asia/Shanghai">Shanghai (CST)</option>
-              <option value="Australia/Sydney">Sydney (AEST)</option>
+              <option value="Australia/Sydney">Sydney (AEDT)</option>
             </select>
             <p className="text-sm text-gray-500 mt-1">
-              Your timezone for scheduling automation.
+              Your timezone for accurate scheduling.
             </p>
-          </div>
-        </div>
-      </div>
-
-      {/* User Info */}
-      <div className="card">
-        <div className="flex items-center space-x-2 mb-4">
-          <Globe className="w-5 h-5 text-primary-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Account Information</h2>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex items-center space-x-4">
-            <img
-              src={user?.picture || 'https://via.placeholder.com/48'}
-              alt={user?.name}
-              className="w-12 h-12 rounded-full"
-            />
-            <div>
-              <h3 className="font-medium text-gray-900">{user?.name}</h3>
-              <p className="text-sm text-gray-600">{user?.email}</p>
-            </div>
           </div>
         </div>
       </div>

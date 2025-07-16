@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Calendar, MessageCircle, Zap } from 'lucide-react';
 
-const Login = () => {
+const Login: React.FC = () => {
   const { login } = useAuth();
 
   return (

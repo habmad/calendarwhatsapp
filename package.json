@@ -5,33 +5,53 @@
   "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "server:dev": "nodemon server/index.js",
+    "server:dev": "ts-node-dev --respawn --transpile-only server/index.ts",
+    "server:build": "tsc",
+    "server:start": "node dist/index.js",
     "client:dev": "cd client && npm start",
-    "build": "cd client && npm run build",
-    "start": "node server/index.js",
+    "client:build": "cd client && npm run build",
+    "build": "npm run server:build && npm run client:build",
+    "start": "npm run server:build && npm run server:start",
     "install:all": "npm install && cd client && npm install",
-    "db:migrate": "node server/database/migrate.js",
-    "db:seed": "node server/database/seed.js"
+    "db:migrate": "ts-node server/database/migrate.ts",
+    "db:seed": "ts-node server/database/seed.ts"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "googleapis": "^128.0.0",
     "axios": "^1.6.0",
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^8.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "node-cron": "^3.0.3",
-    "socket.io": "^4.7.4",
-    "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3",
-    "pg": "^8.11.3",
+    "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "connect-pg-simple": "^8.0.0"
+    "googleapis": "^128.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^3.0.3",
+    "pg": "^8.11.3",
+    "socket.io": "^4.7.4"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/connect-pg-simple": "^7.0.3",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.23",
+    "@types/express-session": "^1.17.10",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.10.9",
+    "concurrently": "^8.2.2",
     "nodemon": "^3.0.1",
-    "concurrently": "^8.2.2"
+    "ts-node": "^10.9.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.0"
   },
-  "keywords": ["google-calendar", "whatsapp", "automation", "oauth"],
+  "keywords": [
+    "google-calendar",
+    "whatsapp",
+    "automation",
+    "oauth"
+  ],
   "author": "Your Name",
   "license": "MIT"
-} 
+}
