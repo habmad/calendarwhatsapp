@@ -1,19 +1,22 @@
-FROM node:18-alpine
+FROM node:18.19-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files and npmrc
+COPY package*.json .npmrc ./
 
-# Install server dependencies
-RUN npm install --only=production
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
 # Install client dependencies and build
-RUN cd client && npm install && npm run build
+RUN cd client && npm ci && npm run build
+
+# Remove dev dependencies to reduce image size
+RUN npm prune --production
 
 # Expose port
 EXPOSE 3001

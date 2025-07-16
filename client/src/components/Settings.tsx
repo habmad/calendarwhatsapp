@@ -4,7 +4,6 @@ import {
   Settings as SettingsIcon, 
   MessageCircle, 
   Clock, 
-  Globe,
   Save,
   CheckCircle,
   AlertCircle
@@ -15,28 +14,28 @@ interface User {
   email: string;
   name: string;
   picture?: string;
-  whatsappRecipient?: string;
+  whatsappRecipients?: string[];
   automationEnabled?: boolean;
   dailySummaryTime?: string;
   timezone?: string;
 }
 
 interface FormData {
-  whatsappRecipient: string;
+  whatsappRecipients: string[];
   automationEnabled: boolean;
   dailySummaryTime: string;
   timezone: string;
 }
 
 const Settings: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const [, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [saved, setSaved] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
-    whatsappRecipient: '',
+    whatsappRecipients: [''],
     automationEnabled: true,
     dailySummaryTime: '08:00',
     timezone: 'America/New_York'
@@ -52,7 +51,7 @@ const Settings: React.FC = () => {
       const response = await axios.get<User>('/auth/me');
       setUser(response.data);
       setFormData({
-        whatsappRecipient: response.data.whatsappRecipient || '',
+        whatsappRecipients: response.data.whatsappRecipients || [''],
         automationEnabled: response.data.automationEnabled !== false,
         dailySummaryTime: response.data.dailySummaryTime || '08:00',
         timezone: response.data.timezone || 'America/New_York'
@@ -80,10 +79,12 @@ const Settings: React.FC = () => {
       setError(null);
       
       // Update user settings
-      await axios.put('/auth/settings', formData);
-      
-      // Update automation settings
-      await axios.put('/automation/settings', formData);
+      await axios.put('/auth/settings', {
+        whatsappRecipients: formData.whatsappRecipients,
+        automationEnabled: formData.automationEnabled,
+        dailySummaryTime: formData.dailySummaryTime,
+        timezone: formData.timezone
+      });
       
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
@@ -100,7 +101,7 @@ const Settings: React.FC = () => {
       const message = `🧪 Test message from GCal WhatsApp\n\nThis is a test message to verify your WhatsApp integration is working correctly.`;
       
       await axios.post('/whatsapp/send-test', {
-        recipientPhone: formData.whatsappRecipient,
+        recipient: formData.whatsappRecipients[0],
         message
       });
       
@@ -160,9 +161,16 @@ const Settings: React.FC = () => {
             <input
               type="tel"
               id="whatsappRecipient"
-              name="whatsappRecipient"
-              value={formData.whatsappRecipient}
-              onChange={handleInputChange}
+              name="whatsappRecipients"
+              value={formData.whatsappRecipients[0] || ''}
+              onChange={(e) => {
+                const newRecipients = [...formData.whatsappRecipients];
+                newRecipients[0] = e.target.value;
+                setFormData(prev => ({
+                  ...prev,
+                  whatsappRecipients: newRecipients
+                }));
+              }}
               placeholder="+1234567890"
               className="input"
             />
