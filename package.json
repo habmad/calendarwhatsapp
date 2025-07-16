@@ -1,0 +1,37 @@
+{
+  "name": "gcal-whatsapp",
+  "version": "1.0.0",
+  "description": "Google Calendar to WhatsApp automation",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "nodemon server/index.js",
+    "client:dev": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "install:all": "npm install && cd client && npm install",
+    "db:migrate": "node server/database/migrate.js",
+    "db:seed": "node server/database/seed.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "googleapis": "^128.0.0",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3",
+    "socket.io": "^4.7.4",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "pg": "^8.11.3",
+    "express-session": "^1.17.3",
+    "connect-pg-simple": "^8.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["google-calendar", "whatsapp", "automation", "oauth"],
+  "author": "Your Name",
+  "license": "MIT"
+} 
