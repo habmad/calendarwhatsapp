@@ -1,11 +1,11 @@
 import { Pool, PoolConfig } from 'pg';
-import { DatabaseConfig } from '../types/interfaces';
 import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
 
 // Parse database URL to extract configuration
+/*
 const parseDatabaseUrl = (url: string): DatabaseConfig => {
   try {
     const parsed = new URL(url);
@@ -21,6 +21,7 @@ const parseDatabaseUrl = (url: string): DatabaseConfig => {
     throw new Error(`Invalid DATABASE_URL: ${error}`);
   }
 };
+*/
 
 // Create pool configuration
 const createPoolConfig = (): PoolConfig => {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+/*
 interface TwilioWhatsAppMessage {
   Body: string;
   From: string;
@@ -37,19 +38,20 @@ interface TwilioWhatsAppResponse {
   to: string;
   body: string;
 }
+*/
 
 class WhatsAppService {
   private accountSid: string;
   private authToken: string;
   private fromNumber: string;
-  private contentSid: string;
+  // private contentSid: string;
   private apiUrl: string;
 
   constructor() {
     this.accountSid = process.env['TWILIO_ACCOUNT_SID'] || '';
     this.authToken = process.env['TWILIO_AUTH_TOKEN'] || '';
     this.fromNumber = process.env['TWILIO_WHATSAPP_FROM'] || '';
-    this.contentSid = process.env['TWILIO_WHATSAPP_CONTENT_SID'] || '';
+    // this.contentSid = process.env['TWILIO_WHATSAPP_CONTENT_SID'] || '';
     
     // Validate required credentials
     if (!this.accountSid) {

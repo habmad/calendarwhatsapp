@@ -200,7 +200,7 @@ class AutomationService {
   // Stop all automations
   stopAllAutomations(): void {
     // Stop all user jobs
-    for (const [userId, job] of this.jobs) {
+    for (const [, job] of this.jobs) {
       job.stop();
     }
     this.jobs.clear();

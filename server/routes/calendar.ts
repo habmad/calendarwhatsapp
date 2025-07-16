@@ -39,7 +39,8 @@ router.get('/events', requireAuth, async (req: Request, res: Response) => {
     const userId = authReq.session.user.id;
     
     if (!start || !end) {
-      return res.status(400).json({ error: 'Start and end dates are required' });
+      res.status(400).json({ error: 'Start and end dates are required' });
+      return;
     }
     
     const startDate = new Date(start as string);

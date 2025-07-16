@@ -23,10 +23,11 @@ router.post('/send-test', async (req: Request, res: Response) => {
   try {
     const { recipient } = req.body;
     if (!recipient) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         success: false, 
         error: 'Recipient phone number is required' 
       });
+      return;
     }
 
     const result = await whatsappService.sendTestMessage(recipient);
@@ -50,10 +51,11 @@ router.post('/preview-summary', requireAuth, async (req: Request, res: Response)
     const summary = await calendarService.getTodaySummary(userId);
     
     if (!summary) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         success: false, 
         error: 'No summary available for today' 
       });
+      return;
     }
 
     res.json({ 
@@ -79,26 +81,29 @@ router.post('/send-summary', requireAuth, async (req: Request, res: Response) =>
     const { UserModel } = await import('../models/User');
     const user = await UserModel.findById(userId);
     if (!user) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         success: false, 
         error: 'User not found' 
       });
+      return;
     }
 
     const recipients = user.whatsapp_recipients || [process.env['DEFAULT_WHATSAPP_RECIPIENT'] || ''];
     if (!recipients.length || !recipients[0]) {
-      return res.status(400).json({ 
+      res.status(400).json({ 
         success: false, 
         error: 'No WhatsApp recipients configured' 
       });
+      return;
     }
 
     const summary = await calendarService.getTodaySummary(userId);
     if (!summary) {
-      return res.status(404).json({ 
+      res.status(404).json({ 
         success: false, 
         error: 'No summary available for today' 
       });
+      return;
     }
 
     const success = await whatsappService.sendDailySummary(recipients, summary.summary);

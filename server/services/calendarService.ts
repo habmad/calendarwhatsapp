@@ -295,6 +295,7 @@ class CalendarService {
     }
   }
 
+  /*
   // Helper method to format time
   private formatTime(dateTimeString: string | null | undefined): string {
     if (!dateTimeString) return '';
@@ -323,6 +324,7 @@ class CalendarService {
       return '📅';
     }
   }
+  */
 }
 
 export default new CalendarService(); 

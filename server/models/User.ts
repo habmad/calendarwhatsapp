@@ -41,7 +41,7 @@ export class UserModel {
       userFields.access_token,
       userFields.refresh_token,
       userFields.token_expiry,
-      userFields.whatsapp_recipient,
+      JSON.stringify(userFields.whatsapp_recipients),
       userFields.automation_enabled,
       userFields.daily_summary_time,
       userFields.timezone

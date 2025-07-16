@@ -64,12 +64,14 @@ router.get('/status/:userId', async (req: Request, res: Response) => {
   try {
     const userIdParam = req.params['userId'];
     if (!userIdParam) {
-      return res.status(400).json({ error: 'User ID parameter is required' });
+      res.status(400).json({ error: 'User ID parameter is required' });
+      return;
     }
     
     const userId = parseInt(userIdParam);
     if (isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      res.status(400).json({ error: 'Invalid user ID' });
+      return;
     }
 
     const status = await automationService.getAutomationStatus(userId);
@@ -109,7 +111,7 @@ router.post('/trigger-change-check', requireAuth, async (req: Request, res: Resp
 });
 
 // Start all automations (admin only)
-router.post('/start-all', async (req: Request, res: Response) => {
+router.post('/start-all', async (_req: Request, res: Response) => {
   try {
     await automationService.startAllAutomations();
     res.json({ success: true, message: 'All automations started successfully' });
@@ -120,7 +122,7 @@ router.post('/start-all', async (req: Request, res: Response) => {
 });
 
 // Stop all automations (admin only)
-router.post('/stop-all', async (req: Request, res: Response) => {
+router.post('/stop-all', async (_req: Request, res: Response) => {
   try {
     automationService.stopAllAutomations();
     res.json({ success: true, message: 'All automations stopped successfully' });

@@ -1,7 +1,9 @@
-require('dotenv').config();
-const pool = require('./config');
+import dotenv from 'dotenv';
+import pool from './config';
 
-const migrateToMultipleRecipients = async () => {
+dotenv.config();
+
+const migrateToMultipleRecipients = async (): Promise<void> => {
   const client = await pool.connect();
   
   try {
@@ -36,7 +38,7 @@ const migrateToMultipleRecipients = async () => {
   }
 };
 
-const runMigration = async () => {
+const runMigration = async (): Promise<void> => {
   try {
     await migrateToMultipleRecipients();
     console.log('Multiple recipients migration completed successfully');
@@ -52,4 +54,4 @@ if (require.main === module) {
   runMigration();
 }
 
-module.exports = { migrateToMultipleRecipients }; 
+export { migrateToMultipleRecipients }; 

@@ -189,7 +189,7 @@ router.get('/me', requireAuth, async (req: Request, res: Response): Promise<void
       name: user.name,
       email: user.email,
       picture: user.picture,
-      whatsappRecipient: user.whatsapp_recipient,
+      whatsappRecipients: user.whatsapp_recipients,
       automationEnabled: user.automation_enabled,
       dailySummaryTime: user.daily_summary_time,
       timezone: user.timezone
@@ -206,8 +206,14 @@ router.put('/settings', requireAuth, async (req: Request, res: Response): Promis
     const authReq = req as AuthenticatedRequest;
     const { whatsappRecipient, automationEnabled, dailySummaryTime, timezone } = req.body;
     
+    const currentUser = await UserModel.findById(authReq.session.user!.id);
+    if (!currentUser) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    
     const user = await UserModel.updateSettings(authReq.session.user!.id, {
-      whatsappRecipient,
+      whatsappRecipients: whatsappRecipient ? [whatsappRecipient] : currentUser.whatsapp_recipients,
       automationEnabled,
       dailySummaryTime,
       timezone
