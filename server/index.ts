@@ -33,9 +33,6 @@ app.use(cors({
     ? [
         process.env['FRONTEND_URL'] || 'https://calendarwhatsapp.vercel.app',
         'https://calendarwhatsapp.vercel.app',
-        // Allow Vercel domains
-        'https://*.vercel.app',
-        'https://*.vercel.app/*',
         // Keep Railway domain for direct access
         'https://calendarwhatsapp-production.up.railway.app'
       ]
