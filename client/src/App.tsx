@@ -209,9 +209,39 @@ function App(): JSX.Element {
                     alert('Error: ' + error);
                   }
                 }}
-                className="btn-primary"
+                className="btn-primary mb-4"
               >
                 Check Auth Status
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    const response = await axios.get('/auth/test-session');
+                    console.log('Test session created:', response.data);
+                    alert(JSON.stringify(response.data, null, 2));
+                  } catch (error) {
+                    console.error('Test session error:', error);
+                    alert('Error: ' + error);
+                  }
+                }}
+                className="btn-primary mb-4"
+              >
+                Create Test Session
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    const response = await axios.get('/auth/test-session-check');
+                    console.log('Test session check:', response.data);
+                    alert(JSON.stringify(response.data, null, 2));
+                  } catch (error) {
+                    console.error('Test session check error:', error);
+                    alert('Error: ' + error);
+                  }
+                }}
+                className="btn-primary"
+              >
+                Check Test Session
               </button>
             </div>
           } 
