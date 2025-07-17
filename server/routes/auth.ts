@@ -129,12 +129,14 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     // Log redirect information
     const redirectUrl = process.env['NODE_ENV'] === Environment.PRODUCTION
-      ? `${process.env['FRONTEND_URL'] || 'https://calendarwhatsapp-production.up.railway.app'}/dashboard` 
+      ? `${process.env['FRONTEND_URL'] || 'https://gcal-whatsapp.vercel.app'}/dashboard` 
       : 'http://localhost:3000/dashboard';
     
     console.log('[Auth] Redirecting to:', redirectUrl);
     console.log('[Auth] Session user:', authReq.session.user);
     console.log('[Auth] Session ID:', authReq.sessionID);
+    console.log('[Auth] FRONTEND_URL env:', process.env['FRONTEND_URL']);
+    console.log('[Auth] NODE_ENV:', process.env['NODE_ENV']);
     
     // Redirect to frontend
     res.redirect(redirectUrl);
@@ -150,6 +152,10 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 // Check authentication status
 router.get('/status', (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
+  console.log('[Auth] Status check - Session ID:', authReq.sessionID);
+  console.log('[Auth] Status check - Session user:', authReq.session.user);
+  console.log('[Auth] Status check - Session exists:', !!authReq.session);
+  
   if (authReq.session.user) {
     res.json({ 
       authenticated: true, 
@@ -158,6 +164,18 @@ router.get('/status', (req: Request, res: Response) => {
   } else {
     res.json({ authenticated: false });
   }
+});
+
+// Debug endpoint to check session
+router.get('/debug-session', (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  res.json({
+    sessionID: authReq.sessionID,
+    sessionExists: !!authReq.session,
+    sessionUser: authReq.session.user,
+    sessionKeys: Object.keys(authReq.session || {}),
+    headers: req.headers
+  });
 });
 
 // Logout

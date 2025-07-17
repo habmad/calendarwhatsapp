@@ -57,7 +57,7 @@ Edit `.env` with your credentials:
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
-GOOGLE_REDIRECT_URI=http://localhost:3001/auth/google/callback
+GOOGLE_REDIRECT_URI=https://your-railway-app.up.railway.app/auth/google/callback
 
 # WhatsApp Business API Configuration
 WHATSAPP_ACCESS_TOKEN=your_whatsapp_access_token_here
@@ -73,6 +73,9 @@ JWT_SECRET=your_jwt_secret_here
 # Server Configuration
 PORT=3001
 NODE_ENV=development
+
+# Frontend URL (for Vercel deployment)
+FRONTEND_URL=https://your-app.vercel.app
 
 # WhatsApp Recipient (the person who will receive the messages)
 DEFAULT_WHATSAPP_RECIPIENT=+1234567890

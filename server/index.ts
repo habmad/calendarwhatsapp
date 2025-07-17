@@ -31,13 +31,18 @@ pool.query('SELECT NOW()', (err, _res) => {
 app.use(cors({
   origin: process.env['NODE_ENV'] === Environment.PRODUCTION
     ? [
-        process.env['FRONTEND_URL'] || `https://${process.env['RAILWAY_STATIC_URL'] || 'calendarwhatsapp-production.up.railway.app'}`,
-        `https://${process.env['RAILWAY_STATIC_URL'] || 'calendarwhatsapp-production.up.railway.app'}`
+        process.env['FRONTEND_URL'] || 'https://calendarwhatsapp.vercel.app',
+        'https://calendarwhatsapp.vercel.app',
+        // Allow Vercel domains
+        'https://*.vercel.app',
+        'https://*.vercel.app/*',
+        // Keep Railway domain for direct access
+        'https://calendarwhatsapp-production.up.railway.app'
       ]
     : 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -56,7 +61,9 @@ const sessionConfig = {
     secure: process.env['NODE_ENV'] === Environment.PRODUCTION,
     httpOnly: true,
     sameSite: (process.env['NODE_ENV'] === Environment.PRODUCTION ? 'none' : 'lax') as 'none' | 'lax',
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    // Remove domain restriction for cross-domain requests
+    domain: undefined
   }
 };
 
