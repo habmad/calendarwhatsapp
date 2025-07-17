@@ -239,9 +239,38 @@ function App(): JSX.Element {
                     alert('Error: ' + error);
                   }
                 }}
-                className="btn-primary"
+                className="btn-primary mb-4"
               >
                 Check Test Session
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    // Get OAuth URL
+                    const authResponse = await axios.get('/auth/google');
+                    const authUrl = authResponse.data.authUrl;
+                    
+                    // Open Google OAuth in popup
+                    const popup = window.open(authUrl, 'google-oauth', 'width=500,height=600');
+                    
+                    // Listen for the callback
+                    const checkClosed = setInterval(() => {
+                      if (popup?.closed) {
+                        clearInterval(checkClosed);
+                        // Try to get the code from the popup URL
+                        // This is a simplified approach
+                        alert('OAuth popup closed. Check console for details.');
+                      }
+                    }, 1000);
+                    
+                  } catch (error) {
+                    console.error('OAuth error:', error);
+                    alert('Error: ' + error);
+                  }
+                }}
+                className="btn-primary"
+              >
+                Test OAuth Flow
               </button>
             </div>
           } 

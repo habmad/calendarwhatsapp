@@ -3,6 +3,7 @@ import { google } from 'googleapis';
 import { UserPrismaModel as UserModel } from '../models/UserPrisma';
 import { CreateUserData } from '../types/interfaces';
 import { Environment } from '../types/enums';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
@@ -28,11 +29,19 @@ interface AuthenticatedRequest extends Request {
 
 // Generate OAuth URL
 router.get('/google', (_req: Request, res: Response) => {
+  console.log('[Auth] Generating OAuth URL...');
+  console.log('[Auth] OAuth2Client config:', {
+    clientId: process.env['GOOGLE_CLIENT_ID'],
+    redirectUri: process.env['GOOGLE_REDIRECT_URI']
+  });
+  
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent' // Force consent to get refresh token
   });
+  
+  console.log('[Auth] Generated auth URL:', authUrl);
   res.json({ authUrl });
 });
 
@@ -305,6 +314,73 @@ router.put('/settings', requireAuth, async (req: Request, res: Response): Promis
   } catch (error) {
     console.error('Update settings error:', error);
     res.status(500).json({ error: 'Failed to update settings' });
+  }
+});
+
+// JWT-based auth (backup system)
+router.post('/login-jwt', async (req: Request, res: Response) => {
+  try {
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ error: 'Authorization code required' });
+    }
+
+    // Exchange code for tokens
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    // Get user info
+    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+    const { data: userInfo } = await oauth2.userinfo.get();
+
+    if (!userInfo.id || !userInfo.email || !userInfo.name) {
+      return res.status(500).json({ error: 'Incomplete user information' });
+    }
+
+    // Find or create user
+    let user = await UserModel.findByGoogleId(userInfo.id);
+    
+    if (!user) {
+      const userData: CreateUserData = {
+        googleId: userInfo.id,
+        email: userInfo.email,
+        name: userInfo.name,
+        picture: userInfo.picture || null,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token || '',
+        tokenExpiry: new Date(tokens.expiry_date || Date.now())
+      };
+      user = await UserModel.create(userData);
+    } else {
+      user = await UserModel.updateTokens(
+        user.id,
+        tokens.access_token!,
+        tokens.refresh_token || user.refresh_token,
+        new Date(tokens.expiry_date!)
+      );
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env['JWT_SECRET'] || 'fallback-secret',
+      { expiresIn: '24h' }
+    );
+
+    res.json({ 
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture
+      }
+    });
+
+  } catch (error) {
+    console.error('JWT login error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
   }
 });
 
