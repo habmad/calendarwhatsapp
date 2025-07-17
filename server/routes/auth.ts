@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { google } from 'googleapis';
-import { UserModel } from '../models/User';
+import { UserPrismaModel as UserModel } from '../models/UserPrisma';
 import { CreateUserData } from '../types/interfaces';
 import { Environment } from '../types/enums';
 

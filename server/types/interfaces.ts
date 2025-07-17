@@ -5,7 +5,7 @@ export interface User {
   google_id: string;
   email: string;
   name: string;
-  picture?: string | undefined;
+  picture?: string | null;
   access_token: string;
   refresh_token: string;
   token_expiry: Date;

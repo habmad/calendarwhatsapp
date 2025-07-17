@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
-import { UserModel } from '../models/User';
-import { CalendarEventModel } from '../models/CalendarEvent';
+import prisma from '../lib/prisma';
+import { UserPrismaModel as UserModel } from '../models/UserPrisma';
 
 class CalendarService {
   // Get Google Calendar API client for a user
@@ -68,7 +68,40 @@ class CalendarService {
           attendees: event.attendees?.map((a: any) => a.email) || []
         };
 
-        await CalendarEventModel.upsert(eventData);
+        // Upsert event to database using Prisma
+        await prisma.calendarEvent.upsert({
+          where: {
+            user_id_event_id: {
+              user_id: eventData.userId,
+              event_id: eventData.eventId
+            }
+          },
+          update: {
+            summary: eventData.summary,
+            description: eventData.description,
+            location: eventData.location,
+            start_time: eventData.startTime,
+            end_time: eventData.endTime,
+            all_day: eventData.allDay,
+            event_type: eventData.eventType,
+            status: eventData.status,
+            attendees: eventData.attendees,
+            last_modified: new Date()
+          },
+          create: {
+            user_id: eventData.userId,
+            event_id: eventData.eventId,
+            summary: eventData.summary,
+            description: eventData.description,
+            location: eventData.location,
+            start_time: eventData.startTime,
+            end_time: eventData.endTime,
+            all_day: eventData.allDay,
+            event_type: eventData.eventType,
+            status: eventData.status,
+            attendees: eventData.attendees
+          }
+        });
       }
       
       console.log(`Synced ${events.length} events for user ${userId}`);
@@ -106,8 +139,8 @@ class CalendarService {
 
       // Filter out all-day events and sort by start time
       const timedEvents = events
-        .filter(event => event.start?.dateTime)
-        .sort((a, b) => {
+        .filter((event: any) => event.start?.dateTime)
+        .sort((a: any, b: any) => {
           const aTime = a.start?.dateTime ? new Date(a.start.dateTime).getTime() : 0;
           const bTime = b.start?.dateTime ? new Date(b.start.dateTime).getTime() : 0;
           return aTime - bTime;
@@ -218,8 +251,16 @@ class CalendarService {
         return [];
       }
 
-      // Get stored events from database
-      const storedEvents = await CalendarEventModel.findByUserIdAndDateRange(userId, today, tomorrow);
+      // Get stored events from database using Prisma
+      const storedEvents = await prisma.calendarEvent.findMany({
+        where: {
+          user_id: userId,
+          start_time: {
+            gte: today,
+            lt: tomorrow
+          }
+        }
+      });
       
       console.log(`[CalendarService] checkForChanges: Found ${googleEvents.length} Google events and ${storedEvents.length} stored events`);
       

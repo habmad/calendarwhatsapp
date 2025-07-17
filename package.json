@@ -14,9 +14,15 @@
     "start": "node dist/index.js",
     "install:all": "npm install && cd client && npm install",
     "db:migrate": "ts-node server/database/migrate.ts",
-    "db:seed": "ts-node server/database/seed.ts"
+    "db:seed": "ts-node server/database/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "db:push": "prisma db push"
   },
   "dependencies": {
+    "@prisma/client": "^6.12.0",
     "axios": "^1.6.2",
     "bcryptjs": "^2.4.3",
     "connect-pg-simple": "^8.0.0",
@@ -28,6 +34,7 @@
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
     "pg": "^8.11.3",
+    "prisma": "^6.12.0",
     "socket.io": "^4.7.4",
     "typescript": "^5.1.6"
   },

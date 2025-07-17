@@ -78,7 +78,7 @@ router.post('/send-summary', requireAuth, async (req: Request, res: Response) =>
     const userId = authReq.session.user.id;
     
     // Get user from database to get WhatsApp recipient
-    const { UserModel } = await import('../models/User');
+    const { UserPrismaModel: UserModel } = await import('../models/UserPrisma');
     const user = await UserModel.findById(userId);
     if (!user) {
       res.status(404).json({ 

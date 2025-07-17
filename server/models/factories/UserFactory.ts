@@ -8,7 +8,7 @@ export class UserFactory {
       google_id: data.googleId,
       email: data.email,
       name: data.name,
-      picture: data.picture || undefined,
+      picture: data.picture || null,
       access_token: data.accessToken,
       refresh_token: data.refreshToken,
       token_expiry: data.tokenExpiry,

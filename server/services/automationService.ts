@@ -1,8 +1,8 @@
 import cron from 'node-cron';
-import { UserModel } from '../models/User';
+import { UserPrismaModel as UserModel } from '../models/UserPrisma';
 import calendarService from './calendarService';
 import whatsappService from './whatsappService';
-import { CalendarEventModel } from '../models/CalendarEvent';
+import prisma from '../lib/prisma';
 
 class AutomationService {
   private jobs: Map<string, cron.ScheduledTask>;
@@ -169,7 +169,15 @@ class AutomationService {
             break;
           case 'deleted':
             // Mark event as cancelled in database
-            await CalendarEventModel.markAsCancelled(userId, change.event.event_id);
+            await prisma.calendarEvent.updateMany({
+              where: {
+                user_id: userId,
+                event_id: change.event.event_id,
+              },
+              data: {
+                status: 'cancelled',
+              },
+            });
             console.log(`[AutomationService] Marked deleted event: ${change.event.summary}`);
             break;
         }
