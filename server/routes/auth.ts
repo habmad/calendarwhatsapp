@@ -143,7 +143,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
 
     // Log redirect information
     const redirectUrl = process.env['NODE_ENV'] === Environment.PRODUCTION
-      ? `${process.env['FRONTEND_URL'] || 'https://gcal-whatsapp.vercel.app'}/dashboard` 
+      ? `${process.env['FRONTEND_URL'] || 'https://calendarwhatsapp.vercel.app'}/dashboard` 
       : 'http://localhost:3000/dashboard';
     
     console.log('[Auth] Redirecting to:', redirectUrl);
