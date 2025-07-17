@@ -1,50 +1,5 @@
 {
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/build",
-  "framework": "create-react-app",
-  "rewrites": [
-    {
-      "source": "/auth/(.*)",
-      "destination": "https://calendarwhatsapp-production.up.railway.app/auth/$1"
-    },
-    {
-      "source": "/calendar/(.*)",
-      "destination": "https://calendarwhatsapp-production.up.railway.app/calendar/$1"
-    },
-    {
-      "source": "/whatsapp/(.*)",
-      "destination": "https://calendarwhatsapp-production.up.railway.app/whatsapp/$1"
-    },
-    {
-      "source": "/automation/(.*)",
-      "destination": "https://calendarwhatsapp-production.up.railway.app/automation/$1"
-    },
-    {
-      "source": "/health",
-      "destination": "https://calendarwhatsapp-production.up.railway.app/health"
-    },
-    {
-      "source": "/ping",
-      "destination": "https://calendarwhatsapp-production.up.railway.app/ping"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://calendarwhatsapp-production.up.railway.app"
-        },
-        {
-          "key": "Access-Control-Allow-Credentials",
-          "value": "true"
-        }
-      ]
-    }
-  ]
+  "framework": "create-react-app"
 } 

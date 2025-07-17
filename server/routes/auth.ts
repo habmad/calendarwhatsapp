@@ -197,10 +197,25 @@ router.get('/test-session', (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
   authReq.session.test = 'session-working';
   authReq.session.user = { id: 999, name: 'Test User' };
+  console.log('[Test] Session created:', authReq.sessionID, authReq.session);
   res.json({ 
     message: 'Session created', 
     sessionID: authReq.sessionID,
-    sessionData: authReq.session
+    sessionData: authReq.session,
+    cookie: req.headers.cookie
+  });
+});
+
+// Test session retrieval
+router.get('/test-session-check', (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  console.log('[Test] Session check:', authReq.sessionID, authReq.session);
+  res.json({ 
+    message: 'Session check', 
+    sessionID: authReq.sessionID,
+    sessionExists: !!authReq.session,
+    sessionData: authReq.session,
+    cookie: req.headers.cookie
   });
 });
 
