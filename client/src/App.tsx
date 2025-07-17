@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-// Configure axios to include credentials for session handling
-axios.defaults.withCredentials = true;
+// Configure axios to call Railway backend directly
+if (process.env.NODE_ENV === 'production') {
+  axios.defaults.baseURL = 'https://calendarwhatsapp-production.up.railway.app';
+  axios.defaults.withCredentials = true;
+}
 
 // Components
 import Login from './components/Login';
