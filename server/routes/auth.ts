@@ -38,34 +38,43 @@ router.get('/google', (_req: Request, res: Response) => {
 
 // OAuth callback
 router.get('/google/callback', async (req: Request, res: Response) => {
+  console.log('[Auth] OAuth callback started');
   try {
     const { code } = req.query;
     
     if (!code || typeof code !== 'string') {
+      console.log('[Auth] No authorization code provided');
       res.status(400).json({ error: 'Authorization code not provided' });
       return;
     }
 
+    console.log('[Auth] Exchanging code for tokens...');
     // Exchange code for tokens
     const { tokens } = await oauth2Client.getToken(code);
     console.log('[Auth] Tokens from Google:', tokens);
     oauth2Client.setCredentials(tokens);
 
+    console.log('[Auth] Getting user info from Google...');
     // Get user info
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const { data: userInfo } = await oauth2.userinfo.get();
+    console.log('[Auth] User info from Google:', userInfo);
 
     // Validate required user info
     if (!userInfo.id || !userInfo.email || !userInfo.name) {
+      console.log('[Auth] Incomplete user information received from Google');
       res.status(500).json({ error: 'Incomplete user information received from Google' });
       return;
     }
 
+    console.log('[Auth] Finding or creating user...');
     // Find or create user
     let user = await UserModel.findByGoogleId(userInfo.id);
     
     if (!user) {
+      console.log('[Auth] Creating new user...');
       if (!tokens.access_token) {
+        console.log('[Auth] No access token received from Google');
         res.status(500).json({ error: 'No access token received from Google' });
         return;
       }
@@ -81,6 +90,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       };
       
       user = await UserModel.create(userData);
+      console.log('[Auth] New user created:', user.id);
       
       // Patch: update refreshToken if missing
       if (!tokens.refresh_token && tokens.access_token) {
@@ -92,6 +102,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         );
       }
     } else {
+      console.log('[Auth] Updating existing user...');
       // Update existing user's tokens
       user = await UserModel.updateTokens(
         user.id,
@@ -99,8 +110,10 @@ router.get('/google/callback', async (req: Request, res: Response) => {
         tokens.refresh_token || user.refresh_token,
         new Date(tokens.expiry_date!)
       );
+      console.log('[Auth] Existing user updated:', user.id);
     }
 
+    console.log('[Auth] Storing user in session...');
     // Store user in session
     const authReq = req as AuthenticatedRequest;
     authReq.session.userId = user.id;
@@ -110,6 +123,7 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       email: user.email,
       picture: user.picture
     };
+    console.log('[Auth] User stored in session:', authReq.session.user);
 
     // Sync today's events after login
     const calendarServiceModule = await import('../services/calendarService');
@@ -175,6 +189,18 @@ router.get('/debug-session', (req: Request, res: Response) => {
     sessionUser: authReq.session.user,
     sessionKeys: Object.keys(authReq.session || {}),
     headers: req.headers
+  });
+});
+
+// Test session creation
+router.get('/test-session', (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  authReq.session.test = 'session-working';
+  authReq.session.user = { id: 999, name: 'Test User' };
+  res.json({ 
+    message: 'Session created', 
+    sessionID: authReq.sessionID,
+    sessionData: authReq.session
   });
 });
 
