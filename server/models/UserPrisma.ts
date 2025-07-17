@@ -1,10 +1,9 @@
 import prisma from '../lib/prisma';
-import type { User as PrismaUser } from '@prisma/client';
 import { User, CreateUserData, UpdateUserSettings } from '../types/interfaces';
 import { TimeZone } from '../types/enums';
 
 export class UserPrismaModel {
-  private static convertPrismaUserToUser(user: PrismaUser): User {
+  private static convertPrismaUserToUser(user: any): User {
     return {
       id: user.id,
       google_id: user.google_id,
