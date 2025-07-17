@@ -28,12 +28,22 @@ interface AuthenticatedRequest extends Request {
 }
 
 // Generate OAuth URL
-router.get('/google', (_req: Request, res: Response) => {
-  console.log('[Auth] Generating OAuth URL...');
-  console.log('[Auth] OAuth2Client config:', {
-    clientId: process.env['GOOGLE_CLIENT_ID'],
-    redirectUri: process.env['GOOGLE_REDIRECT_URI']
-  });
+router.get('/google', (req: Request, res: Response) => {
+  console.log('[Auth] ===== OAuth URL Generation =====');
+  console.log('[Auth] Request headers:', req.headers);
+  console.log('[Auth] Request origin:', req.get('origin'));
+  console.log('[Auth] Request host:', req.get('host'));
+  console.log('[Auth] Environment variables:');
+  console.log('[Auth] - GOOGLE_CLIENT_ID:', process.env['GOOGLE_CLIENT_ID'] ? 'SET' : 'MISSING');
+  console.log('[Auth] - GOOGLE_CLIENT_SECRET:', process.env['GOOGLE_CLIENT_SECRET'] ? 'SET' : 'MISSING');
+  console.log('[Auth] - GOOGLE_REDIRECT_URI:', process.env['GOOGLE_REDIRECT_URI']);
+  console.log('[Auth] - NODE_ENV:', process.env['NODE_ENV']);
+  console.log('[Auth] - FRONTEND_URL:', process.env['FRONTEND_URL']);
+  
+  if (!process.env['GOOGLE_CLIENT_ID'] || !process.env['GOOGLE_CLIENT_SECRET']) {
+    console.error('[Auth] Missing Google OAuth credentials!');
+    return res.status(500).json({ error: 'OAuth configuration missing' });
+  }
   
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -42,6 +52,7 @@ router.get('/google', (_req: Request, res: Response) => {
   });
   
   console.log('[Auth] Generated auth URL:', authUrl);
+  console.log('[Auth] ===== End OAuth URL Generation =====');
   res.json({ authUrl });
 });
 

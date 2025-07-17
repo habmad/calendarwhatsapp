@@ -129,9 +129,16 @@ function App(): JSX.Element {
 
   const login = async (): Promise<void> => {
     try {
-      console.log('[Frontend] Starting OAuth login...');
+      console.log('[Frontend] ===== Starting OAuth Login =====');
+      console.log('[Frontend] Current URL:', window.location.href);
+      console.log('[Frontend] Axios baseURL:', axios.defaults.baseURL);
+      console.log('[Frontend] Axios withCredentials:', axios.defaults.withCredentials);
+      
+      console.log('[Frontend] Making request to /auth/google...');
       const response = await axios.get<{ authUrl: string }>('/auth/google');
-      console.log('[Frontend] OAuth response:', response.data);
+      console.log('[Frontend] OAuth response status:', response.status);
+      console.log('[Frontend] OAuth response data:', response.data);
+      console.log('[Frontend] OAuth response headers:', response.headers);
       
       if (!response.data.authUrl) {
         console.error('[Frontend] No authUrl in response');
@@ -140,10 +147,14 @@ function App(): JSX.Element {
       }
       
       console.log('[Frontend] Redirecting to:', response.data.authUrl);
+      console.log('[Frontend] ===== End OAuth Login =====');
       window.location.href = response.data.authUrl;
-    } catch (error) {
+    } catch (error: any) {
       console.error('[Frontend] Login failed:', error);
-      alert('Login failed: ' + error);
+      console.error('[Frontend] Error response:', error.response?.data);
+      console.error('[Frontend] Error status:', error.response?.status);
+      console.error('[Frontend] Error headers:', error.response?.headers);
+      alert('Login failed: ' + (error.response?.data?.error || error.message));
     }
   };
 
