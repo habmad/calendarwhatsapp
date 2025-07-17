@@ -54,6 +54,7 @@ router.get('/google', (req: Request, res: Response) => {
   console.log('[Auth] Generated auth URL:', authUrl);
   console.log('[Auth] ===== End OAuth URL Generation =====');
   res.json({ authUrl });
+  return;
 });
 
 // OAuth callback
