@@ -11,7 +11,7 @@
     "client:dev": "cd client && npm start",
     "client:build": "cd client && npm run build",
     "build": "npm run server:build && npm run client:build",
-    "start": "npm run server:build && npm run server:start",
+    "start": "node dist/index.js",
     "install:all": "npm install && cd client && npm install",
     "db:migrate": "ts-node server/database/migrate.ts",
     "db:seed": "ts-node server/database/seed.ts"
@@ -28,7 +28,8 @@
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^3.0.3",
     "pg": "^8.11.3",
-    "socket.io": "^4.7.4"
+    "socket.io": "^4.7.4",
+    "typescript": "^5.1.6"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -43,8 +44,7 @@
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.0",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.1.6"
+    "ts-node-dev": "^2.0.0"
   },
   "keywords": [
     "google-calendar",

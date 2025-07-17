@@ -30,9 +30,14 @@ pool.query('SELECT NOW()', (err, _res) => {
 // Middleware
 app.use(cors({
   origin: process.env['NODE_ENV'] === Environment.PRODUCTION
-    ? process.env['FRONTEND_URL'] || 'https://your-app.vercel.app'
+    ? [
+        process.env['FRONTEND_URL'] || `https://${process.env['RAILWAY_STATIC_URL'] || 'calendarwhatsapp-production.up.railway.app'}`,
+        `https://${process.env['RAILWAY_STATIC_URL'] || 'calendarwhatsapp-production.up.railway.app'}`
+      ]
     : 'http://localhost:3000',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -49,6 +54,8 @@ app.use(session({
   }),
   cookie: {
     secure: process.env['NODE_ENV'] === Environment.PRODUCTION,
+    httpOnly: true,
+    sameSite: process.env['NODE_ENV'] === Environment.PRODUCTION ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
 }));
@@ -61,9 +68,12 @@ app.use('/automation', automationRoutes);
 
 // Serve static files from React app in production
 if (process.env['NODE_ENV'] === Environment.PRODUCTION) {
-  app.use(express.static(path.join(__dirname, '../client/build')));
+  const buildPath = path.join(__dirname, '../client/build');
+  console.log('Serving static files from:', buildPath);
+  
+  app.use(express.static(buildPath));
   app.get('*', (_req: Request, res: Response) => {
-    res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+    res.sendFile(path.join(buildPath, 'index.html'));
   });
 }
 
@@ -81,15 +91,40 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    environment: process.env['NODE_ENV'] || Environment.DEVELOPMENT
+    environment: process.env['NODE_ENV'] || Environment.DEVELOPMENT,
+    version: process.env['npm_package_version'] || '1.0.0'
   });
+});
+
+// Simple ping endpoint
+app.get('/ping', (_req: Request, res: Response) => {
+  res.json({ pong: new Date().toISOString() });
 });
 
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env['NODE_ENV'] || Environment.DEVELOPMENT}`);
+  console.log(`Database URL: ${process.env['DATABASE_URL'] ? 'Configured' : 'Missing'}`);
+  console.log(`Google Client ID: ${process.env['GOOGLE_CLIENT_ID'] ? 'Configured' : 'Missing'}`);
+  console.log(`Twilio Account SID: ${process.env['TWILIO_ACCOUNT_SID'] ? 'Configured' : 'Missing'}`);
   
-  // Initialize automation service after server starts
-  await initializeAutomation();
+  try {
+    // Initialize automation service after server starts
+    await initializeAutomation();
+  } catch (error) {
+    console.error('Failed to initialize server:', error);
+  }
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
 });
 
 export default app; 

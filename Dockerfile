@@ -12,6 +12,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Build the server TypeScript code
+RUN npm run server:build
+
 # Install client dependencies and build
 RUN cd client && npm ci && npm run build
 
@@ -21,5 +24,5 @@ RUN npm prune --production
 # Expose port
 EXPOSE 3001
 
-# Start the application
-CMD ["npm", "start"] 
+# Start the application (use the built JavaScript file)
+CMD ["node", "dist/index.js"] 
