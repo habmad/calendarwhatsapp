@@ -71,11 +71,26 @@ console.log('[Session] Configuration:', {
 
 app.use(session(sessionConfig));
 
-// Routes
+// API Routes - MUST come before static file serving
 app.use('/auth', authRoutes);
 app.use('/calendar', calendarRoutes);
 app.use('/whatsapp', whatsappRoutes);
 app.use('/automation', automationRoutes);
+
+// Health check endpoint
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    environment: process.env['NODE_ENV'] || Environment.DEVELOPMENT,
+    version: process.env['npm_package_version'] || '1.0.0'
+  });
+});
+
+// Simple ping endpoint
+app.get('/ping', (_req: Request, res: Response) => {
+  res.json({ pong: new Date().toISOString() });
+});
 
 // Serve static files from React app in production
 if (process.env['NODE_ENV'] === Environment.PRODUCTION) {
@@ -95,21 +110,6 @@ app.use((err: Error, _req: Request, res: Response, next: NextFunction) => {
     return next(err);
   }
   res.status(500).json({ error: 'Something went wrong!' });
-});
-
-// Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: process.env['NODE_ENV'] || Environment.DEVELOPMENT,
-    version: process.env['npm_package_version'] || '1.0.0'
-  });
-});
-
-// Simple ping endpoint
-app.get('/ping', (_req: Request, res: Response) => {
-  res.json({ pong: new Date().toISOString() });
 });
 
 app.listen(PORT, async () => {
