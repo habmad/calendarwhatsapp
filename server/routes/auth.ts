@@ -318,12 +318,13 @@ router.put('/settings', requireAuth, async (req: Request, res: Response): Promis
 });
 
 // JWT-based auth (backup system)
-router.post('/login-jwt', async (req: Request, res: Response) => {
+router.post('/login-jwt', async (req: Request, res: Response): Promise<void> => {
   try {
     const { code } = req.body;
     
     if (!code) {
-      return res.status(400).json({ error: 'Authorization code required' });
+      res.status(400).json({ error: 'Authorization code required' });
+      return;
     }
 
     // Exchange code for tokens
@@ -335,13 +336,19 @@ router.post('/login-jwt', async (req: Request, res: Response) => {
     const { data: userInfo } = await oauth2.userinfo.get();
 
     if (!userInfo.id || !userInfo.email || !userInfo.name) {
-      return res.status(500).json({ error: 'Incomplete user information' });
+      res.status(500).json({ error: 'Incomplete user information' });
+      return;
     }
 
     // Find or create user
     let user = await UserModel.findByGoogleId(userInfo.id);
     
     if (!user) {
+      if (!tokens.access_token) {
+        res.status(500).json({ error: 'No access token received from Google' });
+        return;
+      }
+      
       const userData: CreateUserData = {
         googleId: userInfo.id,
         email: userInfo.email,
@@ -353,9 +360,14 @@ router.post('/login-jwt', async (req: Request, res: Response) => {
       };
       user = await UserModel.create(userData);
     } else {
+      if (!tokens.access_token) {
+        res.status(500).json({ error: 'No access token received from Google' });
+        return;
+      }
+      
       user = await UserModel.updateTokens(
         user.id,
-        tokens.access_token!,
+        tokens.access_token,
         tokens.refresh_token || user.refresh_token,
         new Date(tokens.expiry_date!)
       );
