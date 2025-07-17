@@ -39,6 +39,10 @@ router.get('/google', (_req: Request, res: Response) => {
 // OAuth callback
 router.get('/google/callback', async (req: Request, res: Response) => {
   console.log('[Auth] OAuth callback started');
+  console.log('[Auth] Request URL:', req.url);
+  console.log('[Auth] Request query:', req.query);
+  console.log('[Auth] Request headers:', req.headers);
+  
   try {
     const { code } = req.query;
     
@@ -142,15 +146,17 @@ router.get('/google/callback', async (req: Request, res: Response) => {
     }
 
     // Log redirect information
+    const frontendUrl = process.env['FRONTEND_URL'] || 'https://calendarwhatsapp.vercel.app';
     const redirectUrl = process.env['NODE_ENV'] === Environment.PRODUCTION
-      ? `${process.env['FRONTEND_URL'] || 'https://calendarwhatsapp.vercel.app'}/dashboard` 
+      ? `${frontendUrl}/dashboard` 
       : 'http://localhost:3000/dashboard';
     
+    console.log('[Auth] FRONTEND_URL env:', process.env['FRONTEND_URL']);
+    console.log('[Auth] frontendUrl variable:', frontendUrl);
+    console.log('[Auth] NODE_ENV:', process.env['NODE_ENV']);
     console.log('[Auth] Redirecting to:', redirectUrl);
     console.log('[Auth] Session user:', authReq.session.user);
     console.log('[Auth] Session ID:', authReq.sessionID);
-    console.log('[Auth] FRONTEND_URL env:', process.env['FRONTEND_URL']);
-    console.log('[Auth] NODE_ENV:', process.env['NODE_ENV']);
     
     // Redirect to frontend
     res.redirect(redirectUrl);
