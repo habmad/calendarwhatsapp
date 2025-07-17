@@ -127,11 +127,17 @@ router.get('/google/callback', async (req: Request, res: Response) => {
       console.error('[Auth] Failed to sync events after login:', err);
     }
 
+    // Log redirect information
+    const redirectUrl = process.env['NODE_ENV'] === Environment.PRODUCTION
+      ? `${process.env['FRONTEND_URL'] || 'https://calendarwhatsapp-production.up.railway.app'}/dashboard` 
+      : 'http://localhost:3000/dashboard';
+    
+    console.log('[Auth] Redirecting to:', redirectUrl);
+    console.log('[Auth] Session user:', authReq.session.user);
+    console.log('[Auth] Session ID:', authReq.sessionID);
+    
     // Redirect to frontend
-    res.redirect(process.env['NODE_ENV'] === Environment.PRODUCTION
-      ? `${process.env['FRONTEND_URL'] || 'https://your-app.vercel.app'}/dashboard` 
-      : 'http://localhost:3000/dashboard'
-    );
+    res.redirect(redirectUrl);
     return;
 
   } catch (error) {

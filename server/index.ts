@@ -44,7 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Session configuration
 const PostgresStore = pgSession(session);
-app.use(session({
+const sessionConfig = {
   secret: process.env['JWT_SECRET'] || 'fallback-secret',
   resave: false,
   saveUninitialized: false,
@@ -55,10 +55,19 @@ app.use(session({
   cookie: {
     secure: process.env['NODE_ENV'] === Environment.PRODUCTION,
     httpOnly: true,
-    sameSite: process.env['NODE_ENV'] === Environment.PRODUCTION ? 'none' : 'lax',
+    sameSite: (process.env['NODE_ENV'] === Environment.PRODUCTION ? 'none' : 'lax') as 'none' | 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 1 day
   }
-}));
+};
+
+console.log('[Session] Configuration:', {
+  environment: process.env['NODE_ENV'],
+  secure: sessionConfig.cookie.secure,
+  sameSite: sessionConfig.cookie.sameSite,
+  store: 'PostgresStore'
+});
+
+app.use(session(sessionConfig));
 
 // Routes
 app.use('/auth', authRoutes);
