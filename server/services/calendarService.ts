@@ -105,9 +105,9 @@ class CalendarService {
       }
       
       console.log(`Synced ${events.length} events for user ${userId}`);
-    } catch (error) {
-      console.error('Failed to sync events:', error);
-      throw error;
+    } catch (e: unknown) {
+      console.error('Failed to sync events:', e);
+      throw e;
     }
   }
 
@@ -228,8 +228,8 @@ class CalendarService {
         firstMeeting: timedEvents[0]?.start?.dateTime || null,
         lastMeeting: timedEvents[timedEvents.length - 1]?.end?.dateTime || null
       };
-    } catch (error) {
-      console.error('Failed to get today summary:', error);
+    } catch (e: unknown) {
+      console.error('Failed to get today summary:', e);
       return {
         summary: 'Failed to retrieve today\'s schedule.',
         eventCount: 0,
