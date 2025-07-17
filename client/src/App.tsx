@@ -279,9 +279,25 @@ function App(): JSX.Element {
                     alert('Error: ' + error);
                   }
                 }}
-                className="btn-primary"
+                className="btn-primary mb-4"
               >
                 Test OAuth Flow
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    console.log('[Test] Testing /auth/google endpoint...');
+                    const response = await axios.get('/auth/google');
+                    console.log('[Test] Response:', response.data);
+                    alert(JSON.stringify(response.data, null, 2));
+                  } catch (error) {
+                    console.error('[Test] Error:', error);
+                    alert('Error: ' + error);
+                  }
+                }}
+                className="btn-primary"
+              >
+                Test /auth/google Endpoint
               </button>
             </div>
           } 
