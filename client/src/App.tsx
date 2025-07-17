@@ -129,10 +129,21 @@ function App(): JSX.Element {
 
   const login = async (): Promise<void> => {
     try {
+      console.log('[Frontend] Starting OAuth login...');
       const response = await axios.get<{ authUrl: string }>('/auth/google');
+      console.log('[Frontend] OAuth response:', response.data);
+      
+      if (!response.data.authUrl) {
+        console.error('[Frontend] No authUrl in response');
+        alert('OAuth URL not received from server');
+        return;
+      }
+      
+      console.log('[Frontend] Redirecting to:', response.data.authUrl);
       window.location.href = response.data.authUrl;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('[Frontend] Login failed:', error);
+      alert('Login failed: ' + error);
     }
   };
 
